@@ -1,4 +1,4 @@
-import { handleRecipeGenerateRequest, parseRequestBody, sendJsonResponse } from "../_lib/geminiBackend";
+import { handleRecipeGenerateRequest, parseRequestBody, sendJsonResponse } from "../_lib/geminiBackend.js";
 
 export default async function handler(req: any, res: any) {
   if (req.method === "OPTIONS") {
