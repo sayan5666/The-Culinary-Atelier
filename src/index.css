@@ -1,0 +1,157 @@
+@import "tailwindcss";
+
+@variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-outline: #707a6d;
+  --color-surface-container-highest: #ece0d8;
+  --color-on-surface-variant: #40493e;
+  --color-secondary-fixed-dim: #ffb68c;
+  --color-surface-tint: #106d29;
+  --color-background: #fff8f5;
+  --color-surface-container-low: #fef1e9;
+  --color-surface-variant: #ece0d8;
+  --color-on-error-container: #93000a;
+  --color-outline-variant: #bfcabb;
+  --color-primary-fixed-dim: #83da87;
+  --color-on-secondary-fixed: #321200;
+  --color-inverse-primary: #83da87;
+  --color-on-tertiary-fixed: #251a00;
+  --color-on-primary-fixed-variant: #00531a;
+  --color-surface: #fff8f5;
+  --color-surface-dim: #e4d8cf;
+  --color-on-background: #201b15;
+  --color-secondary: #9a4600;
+  --color-surface-bright: #fff8f5;
+  --color-tertiary-container: #8e711f;
+  --color-on-error: #ffffff;
+  --color-tertiary: #735802;
+  --color-on-secondary: #ffffff;
+  --color-surface-container-lowest: #ffffff;
+  --color-on-secondary-fixed-variant: #753400;
+  --color-secondary-container: #fd8127;
+  --color-on-primary-container: #f7fff2;
+  --color-primary: #0b6b27;
+  --color-tertiary-fixed: #ffdf96;
+  --color-error-container: #ffdad6;
+  --color-surface-container-high: #f2e6dd;
+  --color-secondary-fixed: #ffdbc9;
+  --color-inverse-surface: #362f2a;
+  --color-primary-fixed: #9ef7a1;
+  --color-on-secondary-container: #602900;
+  --color-error: #ba1a1a;
+  --color-tertiary-fixed-dim: #e7c268;
+  --color-on-primary-fixed: #002106;
+  --color-surface-container: #f8ece3;
+  --color-on-tertiary-container: #fffbff;
+  --color-on-tertiary: #ffffff;
+  --color-on-tertiary-fixed-variant: #5a4400;
+  --color-on-primary: #ffffff;
+  --color-primary-container: #2f853d;
+  --color-inverse-on-surface: #fbeee6;
+  --color-on-surface: #201b15;
+
+  --font-headline: "Newsreader", serif;
+  --font-body: "Manrope", sans-serif;
+  --font-label: "Manrope", sans-serif;
+}
+
+@layer base {
+  .dark {
+    --color-background: #141210;
+    --color-surface: #141210;
+    --color-on-background: #ece0d8;
+    --color-on-surface: #ece0d8;
+    --color-surface-container-lowest: #1c1a17;
+    --color-surface-container-low: #25221f;
+    --color-surface-container: #2e2a26;
+    --color-surface-container-high: #37332d;
+    --color-surface-container-highest: #403b35;
+    --color-primary: #83da87;
+    --color-on-primary: #00390f;
+    --color-primary-container: #00531a;
+    --color-on-primary-container: #9ef7a1;
+    --color-secondary: #ffb68c;
+    --color-on-secondary: #532200;
+    --color-secondary-container: #753400;
+    --color-on-secondary-container: #ffdbc9;
+    --color-outline: #899388;
+    --color-outline-variant: #40493e;
+    --color-on-surface-variant: #bfcabb;
+  }
+
+  body {
+    @apply bg-background text-on-background font-body selection:bg-primary-fixed selection:text-on-primary-fixed;
+  }
+}
+
+@keyframes burgerFloat {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes burgerRotate {
+  0% {
+    transform: rotate(-5deg);
+  }
+  100% {
+    transform: rotate(5deg);
+  }
+}
+
+@keyframes burgerClickBounce {
+  0% {
+    transform: scale(1);
+  }
+  30% {
+    transform: scale(0.88);
+  }
+  70% {
+    transform: scale(1.15);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes burgerHappyWiggle {
+  0% {
+    transform: rotate(0deg) scale(1);
+  }
+  20% {
+    transform: rotate(-14deg) scale(1.08);
+  }
+  40% {
+    transform: rotate(14deg) scale(1.1);
+  }
+  60% {
+    transform: rotate(-10deg) scale(1.06);
+  }
+  80% {
+    transform: rotate(8deg) scale(1.03);
+  }
+  100% {
+    transform: rotate(0deg) scale(1);
+  }
+}
+
+.animate-burger-float {
+  animation: burgerFloat 3s ease-in-out infinite;
+}
+
+.animate-burger-rotate {
+  animation: burgerRotate 4s ease-in-out infinite alternate;
+}
+
+.animate-burger-bounce {
+  animation: burgerClickBounce 0.38s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.animate-burger-wiggle {
+  animation: burgerHappyWiggle 0.6s ease-in-out 1;
+}
+

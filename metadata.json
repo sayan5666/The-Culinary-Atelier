@@ -1,0 +1,8 @@
+{
+  "name": "The Culinary Atelier",
+  "description": "A modern epicurean recipe generator powered by AI. Search for any dish in the world or let the AI Sous-Chef craft a bespoke recipe from your leftover ingredients.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

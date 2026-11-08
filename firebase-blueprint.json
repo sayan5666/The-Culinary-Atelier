@@ -1,0 +1,63 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "Information about the authenticated user.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "The unique Firebase Auth ID." },
+        "displayName": { "type": "string", "description": "User's display name." },
+        "email": { "type": "string", "description": "User's email address." },
+        "photoURL": { "type": "string", "description": "URL to user's profile picture." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "When the profile was created." }
+      },
+      "required": ["uid", "email"]
+    },
+    "Recipe": {
+      "title": "Saved Recipe",
+      "description": "A recipe saved by the user.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "The ID of the user who saved this recipe." },
+        "title": { "type": "string", "description": "Recipe title." },
+        "description": { "type": "string", "description": "Recipe description." },
+        "prepTime": { "type": "string", "description": "Preparation time." },
+        "cookTime": { "type": "string", "description": "Cooking time." },
+        "difficulty": { "type": "string", "description": "Difficulty level." },
+        "cuisine": { "type": "string", "description": "Cuisine type." },
+        "ingredients": { "type": "array", "items": { "type": "string" }, "description": "List of ingredients." },
+        "instructions": { "type": "array", "items": { "type": "string" }, "description": "Step-by-step instructions." },
+        "tips": { "type": "array", "items": { "type": "string" }, "description": "Chef tips." },
+        "winePairing": { "type": "string", "description": "Wine pairing suggestion." },
+        "savedAt": { "type": "string", "format": "date-time", "description": "When the recipe was saved." }
+      },
+      "required": ["uid", "title", "ingredients", "instructions"]
+    },
+    "Ingredient": {
+      "title": "Pantry Ingredient",
+      "description": "An ingredient in the user's pantry.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "The ID of the user who owns this ingredient." },
+        "name": { "type": "string", "description": "The name of the ingredient." },
+        "category": { "type": "string", "description": "Category (e.g., Vegetable, Meat, Spice)." },
+        "addedAt": { "type": "string", "format": "date-time", "description": "When the ingredient was added." }
+      },
+      "required": ["uid", "name"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile data."
+    },
+    "/users/{userId}/recipes/{recipeId}": {
+      "schema": "Recipe",
+      "description": "Recipes saved by a specific user."
+    },
+    "/users/{userId}/ingredients/{ingredientId}": {
+      "schema": "Ingredient",
+      "description": "Ingredients in a user's pantry."
+    }
+  }
+}

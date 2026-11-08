@@ -1,0 +1,131 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: /users/{userId}
+    // Document ID: userId (Firebase Auth UID)
+    // Fields:
+    //   - uid: string (required) - The unique Firebase Auth ID.
+    //   - displayName: string (optional) - User's display name.
+    //   - email: string (required) - User's email address.
+    //   - photoURL: string (optional) - URL to user's profile picture.
+    //   - createdAt: timestamp (optional) - When the profile was created.
+    //
+    // Collection: /users/{userId}/recipes/{recipeId}
+    // Document ID: auto-generated
+    // Fields:
+    //   - uid: string (required) - The ID of the user who saved this recipe.
+    //   - title: string (required) - Recipe title.
+    //   - description: string (optional) - Recipe description.
+    //   - prepTime: string (optional) - Preparation time.
+    //   - cookTime: string (optional) - Cooking time.
+    //   - difficulty: string (optional) - Difficulty level.
+    //   - cuisine: string (optional) - Cuisine type.
+    //   - ingredients: list (required) - List of ingredients.
+    //   - instructions: list (required) - Step-by-step instructions.
+    //   - tips: list (optional) - Chef tips.
+    //   - winePairing: string (optional) - Wine pairing suggestion.
+    //   - savedAt: timestamp (optional) - When the recipe was saved.
+    //
+    // Collection: /users/{userId}/ingredients/{ingredientId}
+    // Document ID: auto-generated
+    // Fields:
+    //   - uid: string (required) - The ID of the user who owns this ingredient.
+    //   - name: string (required) - The name of the ingredient.
+    //   - category: string (optional) - Category (e.g., Vegetable, Meat, Spice).
+    //   - addedAt: timestamp (optional) - When the ingredient was added.
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+    function isValidUser(data) {
+      return hasRequiredFields(['uid', 'email']) &&
+             data.uid == request.auth.uid &&
+             isValidEmail(data.email) &&
+             (!('displayName' in data) || data.displayName == null || (data.displayName is string && data.displayName.size() < 100)) &&
+             (!('photoURL' in data) || data.photoURL == null || (data.photoURL is string && data.photoURL.size() < 500)) &&
+             (!('createdAt' in data) || data.createdAt is timestamp);
+    }
+
+    function isValidRecipe(data) {
+      return hasRequiredFields(['uid', 'title', 'ingredients', 'instructions']) &&
+             data.uid == request.auth.uid &&
+             data.title is string && data.title.size() > 0 && data.title.size() < 200 &&
+             data.ingredients is list && data.ingredients.size() > 0 && data.ingredients.size() < 100 &&
+             data.instructions is list && data.instructions.size() > 0 && data.instructions.size() < 100 &&
+             (!('description' in data) || data.description == null || data.description is string) &&
+             (!('prepTime' in data) || data.prepTime == null || data.prepTime is string) &&
+             (!('cookTime' in data) || data.cookTime == null || data.cookTime is string) &&
+             (!('difficulty' in data) || data.difficulty == null || data.difficulty is string) &&
+             (!('cuisine' in data) || data.cuisine == null || data.cuisine is string) &&
+             (!('tips' in data) || data.tips == null || data.tips is list) &&
+             (!('winePairing' in data) || data.winePairing == null || data.winePairing is string) &&
+             (!('savedAt' in data) || data.savedAt is timestamp) &&
+             (!('imageUrl' in data) || data.imageUrl == null || data.imageUrl is string);
+    }
+
+    function isValidIngredient(data) {
+      return hasRequiredFields(['uid', 'name']) &&
+             data.uid == request.auth.uid &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             (!('category' in data) || data.category == null || data.category is string) &&
+             (!('addedAt' in data) || data.addedAt is timestamp);
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidUser(request.resource.data);
+      allow update: if isOwner(userId) && isValidUser(request.resource.data);
+
+      match /recipes/{recipeId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidRecipe(request.resource.data);
+        allow update: if isOwner(userId) && isValidRecipe(request.resource.data);
+        allow delete: if isOwner(userId);
+      }
+
+      match /ingredients/{ingredientId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidIngredient(request.resource.data);
+        allow update: if isOwner(userId) && isValidIngredient(request.resource.data);
+        allow delete: if isOwner(userId);
+      }
+    }
+
+    // Default deny
+    match /{path=**} {
+      allow read, write: if false;
+    }
+  }
+}
