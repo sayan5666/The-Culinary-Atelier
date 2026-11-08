@@ -1,116 +1,96 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { generateRecipeFromIngredients, searchRecipe } from './geminiService';
-
-// Mock the @google/genai module
-vi.mock('@google/genai', () => {
-  const generateContentMock = vi.fn();
-  return {
-    GoogleGenAI: vi.fn().mockImplementation(function() {
-      return {
-        models: {
-          generateContent: generateContentMock,
-        },
-      };
-    }),
-    Type: {
-      OBJECT: 'OBJECT',
-      STRING: 'STRING',
-      ARRAY: 'ARRAY',
-    },
-  };
-});
-
-// Import the mocked module to access the mock function
-import { GoogleGenAI } from '@google/genai';
+import { generateRecipeFromIngredients, searchRecipe, getAutocompleteSuggestions } from './geminiService';
 
 describe('geminiService', () => {
-  const mockAi = new GoogleGenAI({ apiKey: 'AIzaSyDr2sitAtMOmmsaT8WmXUU8Pb50uPx0n7I' });
-  const generateContentMock = mockAi.models.generateContent as any;
-
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.restoreAllMocks();
+  });
+
+  describe('getAutocompleteSuggestions', () => {
+    it('returns empty array when query is less than 2 chars', async () => {
+      const res = await getAutocompleteSuggestions('a');
+      expect(res).toEqual([]);
+    });
+
+    it('returns suggestions from fetch when endpoint succeeds', async () => {
+      const mockSuggestions = ['Salmon Poke', 'Salmon Teriyaki'];
+      vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockSuggestions,
+      } as Response);
+
+      const res = await getAutocompleteSuggestions('salmon');
+      expect(res).toEqual(mockSuggestions);
+    });
+
+    it('falls back to local common suggestions when fetch fails', async () => {
+      vi.spyOn(globalThis, 'fetch').mockRejectedValueOnce(new Error('Network error'));
+
+      const res = await getAutocompleteSuggestions('carbonara');
+      expect(res).toContain('Authentic Carbonara');
+    });
   });
 
   describe('generateRecipeFromIngredients', () => {
-    it('should call generateContent with the correct prompt and config', async () => {
+    it('calls /api/recipe/generate and returns parsed recipe', async () => {
       const mockRecipe = {
-        title: 'Test Recipe',
-        description: 'A delicious test dish',
+        title: 'Tomato Basil Bruschetta',
+        description: 'Crisp rustic bread topped with marinated vine-ripened tomatoes.',
         prepTime: '10m',
-        cookTime: '20m',
-        difficulty: 'Easy',
-        cuisine: 'Test',
-        ingredients: ['Item 1'],
-        instructions: ['Step 1'],
+        cookTime: '5m',
+        difficulty: 'Easy' as const,
+        cuisine: 'Italian',
+        ingredients: ['Tomato', 'Basil', 'Baguette'],
+        instructions: ['Toast bread', 'Top with diced tomatoes and basil'],
       };
 
-      generateContentMock.mockResolvedValue({
-        text: JSON.stringify(mockRecipe),
-      });
+      vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockRecipe,
+      } as Response);
 
-      const ingredients = ['Tomato', 'Basil'];
-      const diet = 'Vegan';
-      const result = await generateRecipeFromIngredients(ingredients, diet);
-
-      expect(generateContentMock).toHaveBeenCalledWith(
-        expect.objectContaining({
-          model: 'gemini-3-flash-preview',
-          contents: expect.stringContaining('Tomato, Basil'),
-          config: expect.objectContaining({
-            responseMimeType: 'application/json',
-          }),
-        })
-      );
-      expect(generateContentMock).toHaveBeenCalledWith(
-        expect.objectContaining({
-          contents: expect.stringContaining('Vegan'),
-        })
-      );
+      const result = await generateRecipeFromIngredients(['Tomato', 'Basil']);
       expect(result).toEqual(mockRecipe);
     });
 
-    it('should handle empty response text gracefully', async () => {
-      generateContentMock.mockResolvedValue({
-        text: '',
-      });
+    it('throws friendly error when API returns error', async () => {
+      vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce({
+        ok: false,
+        json: async () => ({ error: 'Pantry ingredients unavailable' }),
+      } as Response);
 
-      const result = await generateRecipeFromIngredients(['Water']);
-      expect(result).toEqual({});
+      await expect(generateRecipeFromIngredients(['Rare Ingredient'])).rejects.toThrow(
+        'Pantry ingredients unavailable'
+      );
     });
   });
 
   describe('searchRecipe', () => {
-    it('should call generateContent with the search query', async () => {
+    it('calls /api/recipe/search and returns parsed recipe', async () => {
       const mockRecipe = {
-        title: 'Pasta Carbonara',
-        description: 'Classic Italian pasta',
-        prepTime: '5m',
+        title: 'Authentic Carbonara',
+        description: 'Classic Roman pasta with pecorino and guanciale.',
+        prepTime: '10m',
         cookTime: '15m',
-        difficulty: 'Medium',
+        difficulty: 'Easy' as const,
         cuisine: 'Italian',
-        ingredients: ['Pasta', 'Eggs'],
-        instructions: ['Boil pasta', 'Mix eggs'],
+        ingredients: ['Rigatoni', 'Guanciale', 'Pecorino Romano', 'Egg yolks'],
+        instructions: ['Cook pasta', 'Toss with rendered guanciale and egg emulsion'],
       };
 
-      generateContentMock.mockResolvedValue({
-        text: JSON.stringify(mockRecipe),
-      });
+      vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockRecipe,
+      } as Response);
 
-      const query = 'Pasta Carbonara';
-      const result = await searchRecipe(query);
-
-      expect(generateContentMock).toHaveBeenCalledWith(
-        expect.objectContaining({
-          contents: expect.stringContaining(query),
-        })
-      );
+      const result = await searchRecipe('Carbonara');
       expect(result).toEqual(mockRecipe);
     });
 
-    it('should throw an error if generateContent fails', async () => {
-      generateContentMock.mockRejectedValue(new Error('API Error'));
+    it('throws friendly error when search API fails', async () => {
+      vi.spyOn(globalThis, 'fetch').mockRejectedValueOnce(new Error('Network down'));
 
-      await expect(searchRecipe('Fail Dish')).rejects.toThrow('API Error');
+      await expect(searchRecipe('Fail Dish')).rejects.toThrow('Network down');
     });
   });
 });

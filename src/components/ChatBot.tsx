@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 
-const BURGER_ICON_SRC = '/assets/aistudio/burger-chatbot_63e47bd9.png';
+const BURGER_ICON_SRC = '/burger-chatbot.png';
 
 interface Message {
   role: 'user' | 'model';
@@ -60,7 +60,10 @@ export default function ChatBot() {
         }),
       });
 
-      if (!response.ok) throw new Error('Failed to get chat response');
+      if (!response.ok) {
+        const errJson = await response.json().catch(() => ({}));
+        throw new Error(errJson.error || 'Failed to get chat response');
+      }
       const data = await response.json();
 
       const modelMessage: Message = {
@@ -72,7 +75,10 @@ export default function ChatBot() {
       console.warn('Chat warning:', error);
       setMessages((prev) => [
         ...prev,
-        { role: 'model', text: 'Sorry, I encountered an error. Please try again.' },
+        {
+          role: 'model',
+          text: 'The AI Sous-Chef is taking a brief pause in the kitchen. Please try asking your culinary question again in a moment!',
+        },
       ]);
     } finally {
       setIsLoading(false);
