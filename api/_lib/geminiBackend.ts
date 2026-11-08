@@ -682,7 +682,11 @@ async function generateWithGemini(prompt: string): Promise<any> {
       }
     } catch (err: any) {
       lastError = err;
-      console.warn(`Gemini call on ${model} failed, trying fallback:`, err?.status || err?.message || err);
+      // If 403 (e.g. key revoked/leaked) or 401, stop retrying immediately
+      const isForbidden = err?.status === 403 || String(err?.message || "").includes("PERMISSION_DENIED") || String(err?.message || "").includes("leaked");
+      if (isForbidden) {
+        break;
+      }
     }
   }
 
@@ -811,8 +815,7 @@ export async function handleRecipeGenerateRequest(body: any): Promise<{ status: 
     let recipe: any;
     try {
       recipe = await generateWithGemini(prompt);
-    } catch (geminiError: any) {
-      console.warn("Gemini generation quota reached or failed; applying graceful synthesis:", geminiError?.message);
+    } catch {
       recipe = synthesizeRecipe(ingredients, dietaryPreferences);
     }
 
@@ -823,7 +826,6 @@ export async function handleRecipeGenerateRequest(body: any): Promise<{ status: 
     recipeCache.set(cacheKey, recipe);
     return { status: 200, data: recipe };
   } catch (error: any) {
-    console.error("Recipe generation failed:", error);
     return { status: 500, data: { error: "Failed to generate recipe. Please try again." } };
   }
 }
@@ -854,8 +856,7 @@ export async function handleRecipeSearchRequest(body: any): Promise<{ status: nu
     let recipe: any;
     try {
       recipe = await generateWithGemini(prompt);
-    } catch (geminiError: any) {
-      console.warn("Gemini search quota reached or failed; applying graceful synthesis:", geminiError?.message);
+    } catch {
       recipe = synthesizeRecipe(cleanQuery);
     }
 
@@ -941,8 +942,7 @@ CRITICAL RULE — STRICT COOKING-ONLY GUARDRAIL:
 
       const response: any = await Promise.race([chatPromise, timeoutPromise]);
       return { status: 200, data: { text: response.text || NON_COOKING_REFUSAL } };
-    } catch (chatError: any) {
-      console.warn("Chat primary model failed or timed out:", chatError?.message);
+    } catch {
       if (!isCooking) {
         return { status: 200, data: { text: NON_COOKING_REFUSAL } };
       }
